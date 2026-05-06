@@ -1,0 +1,88 @@
+name: Build bwg-mikrotik armv7 release tar
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_release:
+        description: "Upload tarball to a GitHub Release"
+        required: true
+        default: false
+        type: boolean
+      release_tag:
+        description: "Release tag to upload to (leave empty to auto-pick latest release)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-armv7:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: bwg-mikrotik
+      IMAGE_TAG: latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build linux/arm/v7 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          GH_PAT='${{ secrets.GH_TOKEN }}'
+          if [ -z "${GH_PAT}" ]; then
+            GH_PAT='${{ github.token }}'
+          fi
+
+          docker buildx build \
+            --platform linux/arm/v7 \
+            --file __networking/bwg-mikrotik/Dockerfile \
+            --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
+            --secret id=github_token,env=GH_PAT \
+            --load \
+            __networking/bwg-mikrotik
+
+      - name: Export docker image tarball
+        id: export
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAR_NAME="${IMAGE_NAME}-armv7-${IMAGE_TAG}.tar"
+          docker save --output "${TAR_NAME}" "${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "tar_name=${TAR_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bwg-mikrotik-armv7-tar
+          path: ${{ steps.export.outputs.tar_name }}
+          if-no-files-found: error
+
+      - name: Upload tarball to release
+        if: ${{ inputs.upload_to_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          TAR_NAME: ${{ steps.export.outputs.tar_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${INPUT_RELEASE_TAG}"
+          if [ -z "${TAG}" ]; then
+            TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName')"
+          fi
+
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "No release tag found. Provide release_tag input or create a release first."
+            exit 1
+          fi
+
+          gh release upload "${TAG}" "${TAR_NAME}" --clobber
