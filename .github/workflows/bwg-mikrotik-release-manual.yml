@@ -43,25 +43,33 @@ jobs:
             exit 1
           fi
 
-          GH_TOKEN="${GH_PAT}" \
-            gh api repos/yury-sannikov/amneziawg-go >/dev/null
+          rm -rf _build_sources
+          mkdir -p _build_sources
 
-          tmpdir="$(mktemp -d)"
-          if ! git -C "${tmpdir}" clone --depth=1 \
-              "https://x-access-token:${GH_PAT}@github.com/yury-sannikov/amneziawg-go.git" probe >/dev/null 2>&1; then
-            echo "::error ::PAT cannot clone yury-sannikov/amneziawg-go (likely missing 'Contents: Read' permission)."
-            rm -rf "${tmpdir}"
+          if ! git clone --depth=1 \
+              https://github.com/yury-sannikov/amnezia-wg-tools.git \
+              _build_sources/amneziawg-tools; then
+            echo "::error ::Failed to clone yury-sannikov/amnezia-wg-tools."
             exit 1
           fi
-          rm -rf "${tmpdir}"
+
+          if ! git clone --depth=1 \
+              "https://x-access-token:${GH_PAT}@github.com/yury-sannikov/amneziawg-go.git" \
+              _build_sources/amneziawg-go; then
+            echo "::error ::PAT cannot clone yury-sannikov/amneziawg-go (likely missing 'Contents: Read' permission)."
+            exit 1
+          fi
+
+          rm -rf _build_sources/amneziawg-tools/.git _build_sources/amneziawg-go/.git
 
           docker buildx build \
             --platform linux/arm/v7 \
             --file Dockerfile \
             --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --secret id=github_token,env=GH_PAT \
             --load \
             .
+
+          rm -rf _build_sources
 
       - name: Export docker image tarball
         id: export
