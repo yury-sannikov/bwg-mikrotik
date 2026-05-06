@@ -1,0 +1,31 @@
+#!/sbin/openrc-run
+
+description="BWG Quick Up"
+
+depend() {
+    need localmount
+    need net
+}
+
+start_pre()
+{
+    /data/pre_up.sh
+}
+
+start() {
+    for file in $(grep '\[Interface\]' /etc/amnezia/amneziabwg/*.conf -l 2>/dev/null); do
+        interface=$(basename $file .conf)
+        ebegin "Starting BWG interface $interface"
+        /usr/bin/bwg-quick up $file
+    done
+    eend 0
+}
+
+stop() {
+    for file in $(grep '\[Interface\]' /etc/amnezia/amneziabwg/*.conf -l 2>/dev/null); do
+        interface=$(basename $file .conf)
+        ebegin "Shutdown BWG interface $interface"
+        /usr/bin/bwg-quick down $file
+    done
+    eend 0
+}
