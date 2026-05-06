@@ -72,7 +72,7 @@ RUN sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab && \
   ### debian
   if [ -f /lib/rc/sh/init.sh ]; then \
       sed -i -e 's/VSERVER/DOCKER/' -e 's/checkpath -d "$RC_SVCDIR"/mkdir "$RC_SVCDIR"/' /lib/rc/sh/init.sh; \
-      sed -i '/^depend()/,/^}/d' /etc/init.d/wg-quick; \
+      sed -i '/^depend()/,/^}/d' /etc/init.d/bwg-quick; \
   fi && \
   ###
   rm -f \
@@ -89,14 +89,15 @@ RUN sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab && \
   ln -s /usr/sbin/ip6tables-legacy-save /usr/sbin/ip6tables-save && \
   ln -s /usr/sbin/ip6tables-legacy-restore /usr/sbin/ip6tables-restore && \
   #
-  mkdir -p /etc/amnezia/amneziawg/ && \
+  mkdir -p /etc/amnezia/amneziabwg/ && \
   #
   chmod +x /etc/init.d/bwg-quick && \
   chmod +x /data/pre_up.sh && \
   #
-  rc-update add wg-quick default
+  rc-update add bwg-quick default
 
 VOLUME ["/sys/fs/cgroup"]
-HEALTHCHECK --interval=5m --timeout=30s CMD /bin/bash /data/healthcheck.sh
+# TODO: test and re-enable healthcheck
+#HEALTHCHECK --interval=5m --timeout=30s CMD /bin/bash /data/healthcheck.sh
 CMD ["/sbin/init"]
 
