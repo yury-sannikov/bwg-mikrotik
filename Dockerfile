@@ -28,9 +28,9 @@ RUN cd /go/amneziawg-tools/src && make
 RUN cd /go/amneziawg-go && make
 # make work structure
 RUN mkdir -p /tmp/build/usr/bin/ \
-    && mv /go/amneziawg-go/amneziawg-go /tmp/build/usr/bin/amneziawg-go \
-    && mv /go/amneziawg-tools/src/wg /tmp/build/usr/bin/awg \
-    && mv /go/amneziawg-tools/src/wg-quick/linux.bash /tmp/build/usr/bin/awg-quick
+    && mv /go/amneziawg-go/amneziabwg-go /tmp/build/usr/bin/amneziabwg-go \
+    && mv /go/amneziawg-tools/src/wg /tmp/build/usr/bin/bwg \
+    && mv /go/amneziawg-tools/src/wg-quick/linux.bash /tmp/build/usr/bin/bwg-quick
 COPY wireguard-fs /tmp/build/
 
 # Base image for different architecture
