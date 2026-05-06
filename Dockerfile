@@ -22,9 +22,16 @@ RUN echo "Building for platform: $TARGETARCH" && \
     esac
     
 RUN --mount=type=secret,id=github_token \
-    GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
-    git clone --depth=1 "https://${GITHUB_TOKEN}@github.com/yury-sannikov/amnezia-wg-tools.git" && \
-    git clone --depth=1 "https://${GITHUB_TOKEN}@github.com/yury-sannikov/amneziawg-go.git"
+    printf '%s\n' '#!/bin/sh' \
+    'case "$1" in' \
+    '  *Username*) echo "x-access-token" ;;' \
+    '  *Password*) cat /run/secrets/github_token ;;' \
+    'esac' > /tmp/git-askpass.sh && \
+    chmod 700 /tmp/git-askpass.sh && \
+    git clone --depth=1 https://github.com/yury-sannikov/amnezia-wg-tools.git && \
+    GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=/tmp/git-askpass.sh \
+      git clone --depth=1 https://github.com/yury-sannikov/amneziawg-go.git && \
+    rm -f /tmp/git-askpass.sh
 
 RUN cd /go/amneziawg-tools/src && make
 RUN cd /go/amneziawg-go && make
