@@ -46,6 +46,15 @@ jobs:
           GH_TOKEN="${GH_PAT}" \
             gh api repos/yury-sannikov/amneziawg-go >/dev/null
 
+          tmpdir="$(mktemp -d)"
+          if ! git -C "${tmpdir}" clone --depth=1 \
+              "https://x-access-token:${GH_PAT}@github.com/yury-sannikov/amneziawg-go.git" probe >/dev/null 2>&1; then
+            echo "::error ::PAT cannot clone yury-sannikov/amneziawg-go (likely missing 'Contents: Read' permission)."
+            rm -rf "${tmpdir}"
+            exit 1
+          fi
+          rm -rf "${tmpdir}"
+
           docker buildx build \
             --platform linux/arm/v7 \
             --file Dockerfile \
