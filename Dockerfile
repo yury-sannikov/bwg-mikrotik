@@ -24,7 +24,7 @@ RUN echo "Building for platform: $TARGETARCH" && \
 RUN --mount=type=secret,id=github_token \
     printf '%s\n' '#!/bin/sh' \
     'case "$1" in' \
-    '  *Username*) echo "x-access-token" ;;' \
+    '  *Username*) echo "yury-sannikov" ;;' \
     '  *Password*) tr -d "\r\n" < /run/secrets/github_token ;;' \
     'esac' > /tmp/git-askpass.sh && \
     chmod 700 /tmp/git-askpass.sh && \

@@ -25,13 +25,13 @@ jobs:
       IMAGE_TAG: latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build linux/arm/v7 image
         shell: bash
@@ -61,7 +61,7 @@ jobs:
           echo "tar_name=${TAR_NAME}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bwg-mikrotik-armv7-tar
           path: ${{ steps.export.outputs.tar_name }}
