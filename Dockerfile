@@ -25,7 +25,7 @@ RUN --mount=type=secret,id=github_token \
     printf '%s\n' '#!/bin/sh' \
     'case "$1" in' \
     '  *Username*) echo "x-access-token" ;;' \
-    '  *Password*) cat /run/secrets/github_token ;;' \
+    '  *Password*) tr -d "\r\n" < /run/secrets/github_token ;;' \
     'esac' > /tmp/git-askpass.sh && \
     chmod 700 /tmp/git-askpass.sh && \
     git clone --depth=1 https://github.com/yury-sannikov/amnezia-wg-tools.git && \

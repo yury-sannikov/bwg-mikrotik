@@ -39,7 +39,8 @@ jobs:
           set -euo pipefail
           GH_PAT='${{ secrets.GH_TOKEN }}'
           if [ -z "${GH_PAT}" ]; then
-            GH_PAT='${{ github.token }}'
+            echo "GH_TOKEN secret is required (must have read access to yury-sannikov/amneziawg-go)."
+            exit 1
           fi
 
           docker buildx build \
