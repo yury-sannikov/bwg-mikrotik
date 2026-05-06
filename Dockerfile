@@ -23,10 +23,11 @@ RUN echo "Building for platform: $TARGETARCH" && \
     
 RUN --mount=type=secret,id=github_token \
     TOKEN="$(tr -d '\r\n' < /run/secrets/github_token)" && \
-    AUTH="$(printf 'x-access-token:%s' "${TOKEN}" | base64 | tr -d '\r\n')" && \
+    printf "machine github.com\nlogin x-access-token\npassword %s\n" "${TOKEN}" > /root/.netrc && \
+    chmod 600 /root/.netrc && \
     git clone --depth=1 https://github.com/yury-sannikov/amnezia-wg-tools.git && \
-    git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${AUTH}" \
-      clone --depth=1 https://github.com/yury-sannikov/amneziawg-go.git
+    git clone --depth=1 https://github.com/yury-sannikov/amneziawg-go.git && \
+    rm -f /root/.netrc
 
 RUN cd /go/amneziawg-tools/src && make
 RUN cd /go/amneziawg-go && make
