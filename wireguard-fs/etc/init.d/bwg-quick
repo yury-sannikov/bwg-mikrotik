@@ -16,7 +16,7 @@ start() {
     for file in $(grep '\[Interface\]' /etc/amnezia/amneziabwg/*.conf -l 2>/dev/null); do
         interface=$(basename $file .conf)
         ebegin "Starting BWG interface $interface"
-        /usr/bin/bwg-quick up $file
+        GOMEMLIMIT="${GOMEMLIMIT:-200MiB}" GOGC="${GOGC:-50}" /usr/bin/bwg-quick up "$file"
     done
     eend 0
 }
