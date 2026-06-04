@@ -45,16 +45,26 @@ ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETOS
 ARG TARGETVARIANT
+ENV GOMEMLIMIT=200MiB \
+    GOGC=50 \
+    MON_ENABLED=1 \
+    MON_WG_INTERFACE= \
+    MON_WG_PEER_PREFIX= \
+    MON_HA_URL= \
+    MON_HA_TOKEN= \
+    MON_BASE_NAME= \
+    MON_CURL_TIMEOUT=5 \
+    MON_VERBOSE=0
 
 RUN case "$TARGETPLATFORM" in \
         "linux/arm/v5") \
             apt update && \
-            apt install -y bash openrc iptables openresolv iproute2 init procps iputils-ping traceroute && \
+            apt install -y bash openrc iptables openresolv iproute2 init procps iputils-ping traceroute cron curl jq && \
             apt autoremove -y && \
             apt clean -y && \
             rm -rf /var/cache/apt/archives /var/lib/apt/lists/* ;; \
         linux/amd64 | linux/arm64 | linux/arm/v7) \
-            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 ;; \
+            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 cronie curl jq ;; \
         *) echo "Unsupported platform: $TARGETPLATFORM" && exit 1 ;; \
     esac
 
@@ -92,9 +102,13 @@ RUN sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab && \
   mkdir -p /etc/amnezia/amneziabwg/ && \
   #
   chmod +x /etc/init.d/bwg-quick && \
+  chmod 0644 /etc/crontabs/root /etc/cron.d/wg-peer-monitor && \
   chmod +x /data/pre_up.sh && \
+  chmod +x /data/wg-peer-monitor.sh && \
   #
-  rc-update add bwg-quick default
+  rc-update add bwg-quick default && \
+  if [ -f /etc/init.d/crond ]; then rc-update add crond default; fi && \
+  if [ -f /etc/init.d/cron ]; then rc-update add cron default; fi
 
 VOLUME ["/sys/fs/cgroup"]
 # TODO: test and re-enable healthcheck
