@@ -6,6 +6,19 @@
 
 set -u
 
+# cron starts jobs with a stripped environment, so the container's Docker ENV
+# (MON_*) is not visible here. Pull those vars from PID 1's environment.
+if [ -r /proc/1/environ ]; then
+    while IFS= read -r _envline; do
+        case "$_envline" in
+            MON_*) export "$_envline" ;;
+        esac
+    done <<EOF
+$(tr '\0' '\n' < /proc/1/environ)
+EOF
+    unset _envline
+fi
+
 MON_ENABLED="${MON_ENABLED:-1}"
 [ "$MON_ENABLED" = "1" ] || exit 0
 

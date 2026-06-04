@@ -64,7 +64,7 @@ RUN case "$TARGETPLATFORM" in \
             apt clean -y && \
             rm -rf /var/cache/apt/archives /var/lib/apt/lists/* ;; \
         linux/amd64 | linux/arm64 | linux/arm/v7) \
-            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 cronie curl jq ;; \
+            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 cronie cronie-openrc curl jq ;; \
         *) echo "Unsupported platform: $TARGETPLATFORM" && exit 1 ;; \
     esac
 
@@ -107,6 +107,7 @@ RUN sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab && \
   chmod +x /data/wg-peer-monitor.sh && \
   #
   rc-update add bwg-quick default && \
+  if [ -f /etc/init.d/cronie ]; then rc-update add cronie default; fi && \
   if [ -f /etc/init.d/crond ]; then rc-update add crond default; fi && \
   if [ -f /etc/init.d/cron ]; then rc-update add cron default; fi
 
