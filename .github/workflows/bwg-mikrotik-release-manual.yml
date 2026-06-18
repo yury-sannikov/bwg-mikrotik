@@ -1,4 +1,4 @@
-name: Build bwg-mikrotik armv7 release tar
+name: Build bwg-mikrotik release tar
 
 on:
   workflow_dispatch:
@@ -84,6 +84,96 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: bwg-mikrotik-armv7-tar
+          path: ${{ steps.export.outputs.tar_name }}
+          if-no-files-found: error
+
+      - name: Upload tarball to release
+        if: ${{ inputs.upload_to_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          TAR_NAME: ${{ steps.export.outputs.tar_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${INPUT_RELEASE_TAG}"
+          if [ -z "${TAG}" ]; then
+            TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName')"
+          fi
+
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "No release tag found. Provide release_tag input or create a release first."
+            exit 1
+          fi
+
+          gh release upload "${TAG}" "${TAR_NAME}" --clobber
+
+  build-arm64:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: bwg-mikrotik
+      IMAGE_TAG: latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build linux/arm64 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          GH_PAT='${{ secrets.GH_TOKEN }}'
+          if [ -z "${GH_PAT}" ]; then
+            echo "GH_TOKEN secret is required (must have read access to yury-sannikov/amneziawg-go)."
+            exit 1
+          fi
+
+          rm -rf _build_sources
+          mkdir -p _build_sources
+
+          if ! git clone --depth=1 \
+              https://github.com/yury-sannikov/amnezia-wg-tools.git \
+              _build_sources/amneziawg-tools; then
+            echo "::error ::Failed to clone yury-sannikov/amnezia-wg-tools."
+            exit 1
+          fi
+
+          if ! git clone --depth=1 \
+              "https://x-access-token:${GH_PAT}@github.com/yury-sannikov/amneziawg-go.git" \
+              _build_sources/amneziawg-go; then
+            echo "::error ::PAT cannot clone yury-sannikov/amneziawg-go (likely missing 'Contents: Read' permission)."
+            exit 1
+          fi
+
+          rm -rf _build_sources/amneziawg-tools/.git _build_sources/amneziawg-go/.git
+
+          docker buildx build \
+            --platform linux/arm64 \
+            --file Dockerfile \
+            --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
+            --load \
+            .
+
+          rm -rf _build_sources
+
+      - name: Export docker image tarball
+        id: export
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAR_NAME="${IMAGE_NAME}-arm64-${IMAGE_TAG}.tar"
+          docker save --output "${TAR_NAME}" "${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "tar_name=${TAR_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: bwg-mikrotik-arm64-tar
           path: ${{ steps.export.outputs.tar_name }}
           if-no-files-found: error
 
