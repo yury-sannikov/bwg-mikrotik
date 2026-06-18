@@ -45,8 +45,8 @@ ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETOS
 ARG TARGETVARIANT
-ENV GOMEMLIMIT=200MiB \
-    GOGC=50 \
+ENV GOMEMLIMIT=300MiB \
+    GOGC=100 \
     MON_ENABLED=1 \
     MON_WG_INTERFACE= \
     MON_WG_PEER_PREFIX= \
@@ -59,12 +59,12 @@ ENV GOMEMLIMIT=200MiB \
 RUN case "$TARGETPLATFORM" in \
         "linux/arm/v5") \
             apt update && \
-            apt install -y bash openrc iptables openresolv iproute2 init procps iputils-ping traceroute cron curl jq && \
+            apt install -y bash openrc iptables openresolv iproute2 init procps iputils-ping traceroute cron curl jq iperf3 mtr-tiny wget vim-tiny && \
             apt autoremove -y && \
             apt clean -y && \
             rm -rf /var/cache/apt/archives /var/lib/apt/lists/* ;; \
         linux/amd64 | linux/arm64 | linux/arm/v7) \
-            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 cronie cronie-openrc curl jq ;; \
+            apk add --no-cache bash openrc iptables iptables-legacy openresolv iproute2 cronie cronie-openrc curl jq iperf3 traceroute mtr wget ;; \
         *) echo "Unsupported platform: $TARGETPLATFORM" && exit 1 ;; \
     esac
 
@@ -112,7 +112,8 @@ RUN sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab && \
   if [ -f /etc/init.d/cron ]; then rc-update add cron default; fi
 
 VOLUME ["/sys/fs/cgroup"]
-# TODO: test and re-enable healthcheck
-#HEALTHCHECK --interval=5m --timeout=30s CMD /bin/bash /data/healthcheck.sh
+HEALTHCHECK --interval=10m --timeout=30s CMD /bin/bash /data/healthcheck.sh
 CMD ["/sbin/init"]
 
+# iperf3 -c 10.100.3.1 -b 100M -u
+# iperf3 -c 10.100.3.1 -b 100M -p 8
